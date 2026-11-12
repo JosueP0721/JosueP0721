@@ -1,0 +1,43 @@
+# Actualiza el bloque "Reciente" del README con actividad PUBLICA.
+# Lee solo /users/<user>/events/public con el GITHUB_TOKEN por defecto, asi que
+# los repos privados (y sus PRs, commits o tickets) nunca aparecen.
+name: actividad
+
+on:
+  schedule:
+    - cron: "30 6 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: actividad
+  cancel-in-progress: true
+
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Actualizar bloque de actividad
+        env:
+          GH_USER: ${{ github.repository_owner }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          # Duenos de repos que nunca se listan aunque sean publicos (trabajo).
+          EXCLUDE_OWNERS: "YaVendio"
+        run: python3 .github/scripts/actividad.py README.md
+
+      - name: Commit si cambio
+        run: |
+          if git diff --quiet README.md; then
+            echo "Sin cambios"
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add README.md
+          git commit -m "actividad: actualiza el bloque reciente"
+          git push

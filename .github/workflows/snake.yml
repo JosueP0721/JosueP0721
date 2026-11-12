@@ -1,0 +1,40 @@
+# Genera la serpiente pixel que se come la grilla de contribuciones.
+# Escribe los SVG en la rama `output` (no toca main). Solo usa los contadores
+# del calendario de contribuciones: ningun nombre de repo ni detalle.
+name: snake
+
+on:
+  schedule:
+    - cron: "0 6 * * *" # todos los dias, 01:00 en Peru
+  workflow_dispatch:
+  push:
+    branches: [main]
+
+permissions:
+  contents: write
+
+concurrency:
+  group: snake
+  cancel-in-progress: true
+
+jobs:
+  generate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Generar serpiente (oscuro y claro)
+        uses: Platane/snk@v3
+        with:
+          github_user_name: ${{ github.repository_owner }}
+          outputs: |
+            dist/snake-dark.svg?color_snake=#ffb43c&color_dots=#161b22,#0b3d22,#13693a,#22a457,#46f28c
+            dist/snake-light.svg?color_snake=#b5410f&color_dots=#ebedf0,#b9e6c9,#6fcf97,#2e9e5b,#1a6b3c
+
+      - name: Publicar en la rama output
+        uses: crazy-max/ghaction-github-pages@v4
+        with:
+          target_branch: output
+          build_dir: dist
+          commit_message: "snake: actualiza la grilla"
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
